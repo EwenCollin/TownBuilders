@@ -19,6 +19,12 @@
 #include <arcana/threading/task.h>
 #include <arcana/tracing/trace_region.h>
 
+#include <android/log.h>
+#define  LOG_TAG    "NativeLOG"
+
+#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 namespace
 {
     bgfx::TextureFormat::Enum XrTextureFormatToBgfxFormat(xr::TextureFormat format)
@@ -321,6 +327,8 @@ namespace
         auto jsGamepadObject = Napi::Object::New(env);
         SetXRGamepadObjectData(jsInputSource, jsGamepadObject, inputSource);
     }
+
+
 }
 
 // NativeXr implementation proper.
@@ -408,6 +416,24 @@ namespace Babylon
             std::string GetNativeXrContextType()
             {
                 return m_system.GetNativeXrContextType();
+            }
+            void addLocalEarthAnchor(std::string anchor_name, float *in_quaternion4_translation3, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
+                m_system.addLocalEarthAnchor(anchor_name, in_quaternion4_translation3, out_placed, out_quaternion_4, out_altitude, out_latitude, out_longitude);
+            }
+            void getEarthQuaternionLatitudeLongitude(float *out_quaternion_4, double *out_latitude, double *out_longitude) {
+                m_system.getEarthQuaternionLatitudeLongitude(out_quaternion_4, out_latitude, out_longitude);
+            }
+            void addEarthAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {
+                m_system.addEarthAnchor(anchor_name, in_quaternion_4, in_latitude, in_longitude, in_altitude, out_placed);
+            }
+            void hitTestEarthAnchor(std::string anchor_name, float in_tap_x, float in_tap_y, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
+                m_system.hitTestEarthAnchor(anchor_name, in_tap_x, in_tap_y, out_placed, out_quaternion_4, out_altitude, out_latitude, out_longitude);
+            }
+            void getEarthAnchorPose(std::string anchor_name, float *out_matrix, float *out_cam_matrix) {
+                m_system.getEarthAnchorPose(anchor_name, out_matrix, out_cam_matrix);
+            }
+            void removeEarthAnchor(std::string anchor_name) {
+                m_system.removeEarthAnchor(anchor_name);
             }
 
         private:
@@ -3368,21 +3394,38 @@ namespace Babylon
                 Napi::HandleScope scope{env};
 
                 Napi::Function func = DefineClass(
-                    env,
-                    JS_CLASS_NAME,
-                    {
-                        InstanceMethod("isSessionSupported", &XR::IsSessionSupported),
-                        InstanceMethod("requestSession", &XR::RequestSession),
-                        InstanceMethod("getWebXRRenderTarget", &XR::GetWebXRRenderTarget),
-                        InstanceMethod("getNativeRenderTargetProvider", &XR::GetNativeRenderTargetProvider),
-                        InstanceAccessor("nativeXrContext", &XR::GetNativeXrContext, nullptr),
-                        InstanceAccessor("nativeXrContextType", &XR::GetNativeXrContextType, nullptr),
-                        InstanceMethod("getNativeAnchor", &XR::GetNativeAnchor),
-                        InstanceMethod("declareNativeAnchor", &XR::DeclareNativeAnchor),
-                        InstanceValue(JS_NATIVE_NAME, Napi::Value::From(env, true)),
-                    });
-
+                        env,
+                        JS_CLASS_NAME,
+                        {
+                                InstanceMethod("isSessionSupported", &XR::IsSessionSupported),
+                                InstanceMethod("requestSession", &XR::RequestSession),
+                                InstanceMethod("getWebXRRenderTarget", &XR::GetWebXRRenderTarget),
+                                InstanceMethod("getNativeRenderTargetProvider", &XR::GetNativeRenderTargetProvider),
+                                InstanceAccessor("nativeXrContext", &XR::GetNativeXrContext, nullptr),
+                                InstanceAccessor("nativeXrContextType", &XR::GetNativeXrContextType, nullptr),
+                                InstanceMethod("getNativeAnchor", &XR::GetNativeAnchor),
+                                InstanceMethod("declareNativeAnchor", &XR::DeclareNativeAnchor),
+                                InstanceMethod("GEO_getEarthQuaternionLatitudeLongitude", &XR::GEO_getEarthQuaternionLatitudeLongitude),
+                                InstanceMethod("GEO_removeEarthAnchor", &XR::GEO_removeEarthAnchor),
+                                InstanceMethod("GEO_getEarthAnchorPose", &XR::GEO_getEarthAnchorPose),
+                                InstanceMethod("GEO_hitTestEarthAnchor", &XR::GEO_hitTestEarthAnchor),
+                                InstanceMethod("GEO_addEarthAnchor", &XR::GEO_addEarthAnchor),
+                                InstanceMethod("GEO_addLocalEarthAnchor", &XR::GEO_addLocalEarthAnchor),
+                                InstanceValue(JS_NATIVE_NAME, Napi::Value::From(env, true)),
+                        });
+                /*
+                Napi::Function func_earth = DefineClass(
+                        env,
+                        "GeospatialARCore",
+                        {
+                                InstanceMethod("GEO_getEarthQuaternionLatitudeLongitude", &XR::GEO_getEarthQuaternionLatitudeLongitude),
+                                InstanceValue("earth_native", Napi::Value::From(env, true)),
+                        });
+                */
                 Napi::Object global = env.Global();
+                //auto nativeObject{JsRuntime::NativeObject::GetFromJavaScript(env)};
+                //nativeObject.Set("GEO_getEarthQuaternionLatitudeLongitude", Napi::Function::New(env, XR::GEO_getEarthQuaternionLatitudeLongitude, "GEO_getEarthQuaternionLatitudeLongitude"));
+
                 Napi::Object navigator;
                 if (global.Has(JS_NAVIGATOR_NAME))
                 {
@@ -3395,8 +3438,10 @@ namespace Babylon
                 }
 
                 auto xr = func.New({});
+                //auto earth = func_earth.New({});
                 XR::Unwrap(xr)->m_xr = std::move(nativeXr);
                 navigator.Set(JS_XR_NAME, xr);
+                //navigator.Set("earth", earth);
             }
 
             XR(const Napi::CallbackInfo& info)
@@ -3508,6 +3553,113 @@ namespace Babylon
                 const auto anchorPtr = reinterpret_cast<void*>(static_cast<uintptr_t>(info[1].As<Napi::Number>().DoubleValue()));
                 return session->DeclareNativeAnchor(info.Env(), anchorPtr);
             }
+
+            void GEO_removeEarthAnchor(const Napi::CallbackInfo &info) {
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                m_xr->removeEarthAnchor(anchor_name);
+            }
+
+            Napi::Value GEO_getEarthAnchorPose(const Napi::CallbackInfo &info) {
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                float out_matrix[16];
+                float out_cam_matrix[16];
+                m_xr->getEarthAnchorPose(anchor_name, out_matrix, out_cam_matrix);
+                Napi::Object earthPose = Napi::Object::New(info.Env());
+                for (int i = 0; i < 16; i++) {
+                    earthPose.Set("m" + std::to_string(i), out_matrix[i]);
+                    earthPose.Set("c" + std::to_string(i), out_cam_matrix[i]);
+                }
+                return earthPose;
+            }
+
+            Napi::Value GEO_addLocalEarthAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In geo local func\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto qx = info[1].As<Napi::Number>().FloatValue();
+                auto qy = info[2].As<Napi::Number>().FloatValue();
+                auto qz = info[3].As<Napi::Number>().FloatValue();
+                auto qw = info[4].As<Napi::Number>().FloatValue();
+                auto tx = info[5].As<Napi::Number>().FloatValue();
+                auto ty = info[6].As<Napi::Number>().FloatValue();
+                auto tz = info[7].As<Napi::Number>().FloatValue();
+                double latitude;
+                double longitude;
+                double altitude;
+                float out_quaternion[4];
+                bool out_placed = false;
+                LOGD("Before local earth anchor\n");
+                float in_quaternion4_translation3[7] = {qx, qy, qz, qw, tx, ty, tz};
+                m_xr->addLocalEarthAnchor(anchor_name, in_quaternion4_translation3, &out_placed, out_quaternion, &altitude, &latitude, &longitude);
+                LOGD("After local earth anchor\n");
+                Napi::Object hitTestAnchor = Napi::Object::New(info.Env());
+                hitTestAnchor.Set("success", out_placed);
+                hitTestAnchor.Set("qx", Napi::Number::New(info.Env(), out_quaternion[0]));
+                hitTestAnchor.Set("qy", Napi::Number::New(info.Env(), out_quaternion[1]));
+                hitTestAnchor.Set("qz", Napi::Number::New(info.Env(), out_quaternion[2]));
+                hitTestAnchor.Set("qw", Napi::Number::New(info.Env(), out_quaternion[3]));
+                hitTestAnchor.Set("lat", Napi::Number::New(info.Env(), latitude));
+                hitTestAnchor.Set("lon", Napi::Number::New(info.Env(), longitude));
+                hitTestAnchor.Set("alt", Napi::Number::New(info.Env(), altitude));
+                return hitTestAnchor;
+            }
+
+            Napi::Value GEO_hitTestEarthAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In geo func\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto tap_x = info[1].As<Napi::Number>().FloatValue();
+                auto tap_y = info[2].As<Napi::Number>().FloatValue();
+                double latitude;
+                double longitude;
+                double altitude;
+                float out_quaternion[4];
+                bool out_placed = false;
+                LOGD("Before hit test earth anchor\n");
+                m_xr->hitTestEarthAnchor(anchor_name, tap_x, tap_y, &out_placed, out_quaternion, &altitude, &latitude, &longitude);
+                LOGD("After hit test earth anchor\n");
+                Napi::Object hitTestAnchor = Napi::Object::New(info.Env());
+                hitTestAnchor.Set("success", out_placed);
+                hitTestAnchor.Set("qx", Napi::Number::New(info.Env(), out_quaternion[0]));
+                hitTestAnchor.Set("qy", Napi::Number::New(info.Env(), out_quaternion[1]));
+                hitTestAnchor.Set("qz", Napi::Number::New(info.Env(), out_quaternion[2]));
+                hitTestAnchor.Set("qw", Napi::Number::New(info.Env(), out_quaternion[3]));
+                hitTestAnchor.Set("lat", Napi::Number::New(info.Env(), latitude));
+                hitTestAnchor.Set("lon", Napi::Number::New(info.Env(), longitude));
+                hitTestAnchor.Set("alt", Napi::Number::New(info.Env(), altitude));
+                return hitTestAnchor;
+            }
+
+            Napi::Value GEO_addEarthAnchor(const Napi::CallbackInfo &info) {
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto qx = info[1].As<Napi::Number>().FloatValue();
+                auto qy = info[2].As<Napi::Number>().FloatValue();
+                auto qz = info[3].As<Napi::Number>().FloatValue();
+                auto qw = info[4].As<Napi::Number>().FloatValue();
+                auto latitude = info[5].As<Napi::Number>().DoubleValue();
+                auto longitude = info[6].As<Napi::Number>().DoubleValue();
+                auto altitude = info[7].As<Napi::Number>().DoubleValue();
+                bool out_placed = false;
+                float in_quaternion_4[4] = {qx, qy, qz, qw};
+                m_xr->addEarthAnchor(anchor_name, in_quaternion_4, latitude, longitude, altitude, &out_placed);
+                Napi::Object addAnchorResult = Napi::Object::New(info.Env());
+                addAnchorResult.Set("success", out_placed);
+                return addAnchorResult;
+            }
+
+            Napi::Value GEO_getEarthQuaternionLatitudeLongitude(const Napi::CallbackInfo& info)
+            {
+                Napi::Object earthQuatLatLon = Napi::Object::New(info.Env());
+                float out_quaternion_4[4] = {};
+                double out_latitude = 0.0;
+                double out_longitude = 0.0;
+                m_xr->getEarthQuaternionLatitudeLongitude(out_quaternion_4, &out_latitude, &out_longitude);
+                earthQuatLatLon.Set("qx", Napi::Number::New(info.Env(), out_quaternion_4[0]));
+                earthQuatLatLon.Set("qy", Napi::Number::New(info.Env(), out_quaternion_4[1]));
+                earthQuatLatLon.Set("qz", Napi::Number::New(info.Env(), out_quaternion_4[2]));
+                earthQuatLatLon.Set("qw", Napi::Number::New(info.Env(), out_quaternion_4[3]));
+                earthQuatLatLon.Set("lat", Napi::Number::New(info.Env(), out_latitude));
+                earthQuatLatLon.Set("lon", Napi::Number::New(info.Env(), out_longitude));
+                return earthQuatLatLon;
+            }
         };
     }
 
@@ -3521,6 +3673,7 @@ namespace Babylon
         NativeXr::~NativeXr()
         {
         }
+
 
         NativeXr NativeXr::Initialize(Napi::Env env)
         {
@@ -3547,6 +3700,7 @@ namespace Babylon
             NativeWebXRRenderTarget::Initialize(env);
             NativeRenderTargetProvider::Initialize(env);
             XR::Initialize(env, impl);
+
 
             return {impl};
         }

@@ -397,9 +397,16 @@ namespace xr
         bool IsInitialized() const;
         bool TryInitialize();
         static arcana::task<bool, std::exception_ptr> IsSessionSupportedAsync(SessionType);
-
         uintptr_t GetNativeXrContext();
         std::string GetNativeXrContextType();
+
+        //add get earthQuaternion + lat,lon
+        void addLocalEarthAnchor(std::string anchor_name, float *in_quaternion4_translation3, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude);
+        void removeEarthAnchor(std::string anchor_name);
+        void getEarthAnchorPose(std::string anchor_name, float *out_matrix, float *out_cam_matrix);
+        void hitTestEarthAnchor(std::string anchor_name, float in_tap_x, float in_tap_y, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude);
+        void addEarthAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed);
+        void getEarthQuaternionLatitudeLongitude(float *out_quaternion_4, double *out_latitude, double *out_longitude);
 
     private:
         struct Impl;

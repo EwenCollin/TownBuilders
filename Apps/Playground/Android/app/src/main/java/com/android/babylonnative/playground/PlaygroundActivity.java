@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+//import android.support.v4.app.ActivityCompat;
+//import android.support.v4.content.ContextCompat;
 import android.view.View;
 
 import BabylonNative.BabylonView;
@@ -48,6 +50,6 @@ public class PlaygroundActivity extends Activity implements BabylonView.ViewDele
 
     @Override
     public void onViewReady() {
-        mView.loadScript("app:///Scripts/experience.js");
+        mView.loadScript("app:///Scripts/index.js");
     }
 }

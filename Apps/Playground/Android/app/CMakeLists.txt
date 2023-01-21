@@ -23,6 +23,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(BABYLON_NATIVE_PLATFORM "Android")
 set(CMAKE_CXX_STANDARD 17)
 
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(openssl REQUIRED CONFIG)
+
+
 if (${ANDROID_JSENGINE_LIBNAME} STREQUAL "jsc")
     set(NAPI_JAVASCRIPT_ENGINE "JavaScriptCore" CACHE STRING "JavaScript engine for N-API.")
 elseif (${ANDROID_JSENGINE_LIBNAME} STREQUAL "v8android")
@@ -47,6 +51,8 @@ target_include_directories(BabylonNativeJNI
         PRIVATE
         ${BABYLON_NATIVE_PLAYGROUND_DIR}/Shared)
 
+#add_library(openssl SHARED IMPORTED GLOBAL)
+
 target_link_libraries(BabylonNativeJNI
         GLESv3
         android
@@ -66,4 +72,7 @@ target_link_libraries(BabylonNativeJNI
         NativeCamera
         AndroidExtensions
         ChromeDevTools
+        NativeRTC
+        openssl::crypto
+        openssl::ssl
         )

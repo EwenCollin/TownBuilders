@@ -35,6 +35,14 @@
 
 #include "Include/IXrContextARCore.h"
 
+#include <unordered_map>
+
+#include <android/log.h>
+#define  LOG_TAG    "NativeLOG"
+
+#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 using namespace android;
 using namespace android::global;
 using namespace android::OpenGLHelpers;
@@ -45,6 +53,8 @@ namespace xr
         bool Initialized{false};
         ArSession* Session{nullptr};
         ArFrame* Frame{nullptr};
+        ArEarth* Earth{nullptr};
+        std::unordered_map<std::string, std::shared_ptr<ArAnchor*>> EarthAnchors{};
 
         bool IsInitialized() const override
         {
@@ -56,9 +66,20 @@ namespace xr
             return Session;
         }
 
+        ArEarth* XrEarth() const override
+        {
+            return Earth;
+        }
+
+
         ArFrame* XrFrame() const override
         {
             return Frame;
+        }
+
+        std::unordered_map<std::string, std::shared_ptr<ArAnchor*>> XrEarthAnchors() const override
+        {
+            return EarthAnchors;
         }
 
         virtual ~XrContextARCore() = default;
@@ -67,6 +88,7 @@ namespace xr
     struct System::Impl
     {
         std::shared_ptr<XrContextARCore> XrContext{std::make_shared<XrContextARCore>()};
+
 
         Impl(const std::string& /*applicationName*/)
         {
@@ -272,6 +294,7 @@ namespace xr
                 ArSession_destroy(xrContext->Session);
                 xrContext->Session = nullptr;
                 xrContext->Initialized = false;
+                ArTrackable_release(reinterpret_cast<ArTrackable*>(xrContext->Earth));
 
                 glDeleteTextures(1, &cameraTextureId);
                 glDeleteProgram(cameraShaderProgramId);
@@ -338,7 +361,7 @@ namespace xr
 
                 // Set Focus Mode Auto
                 ArConfig_setFocusMode(xrContext->Session, arConfig, AR_FOCUS_MODE_AUTO);
-
+                ArConfig_setGeospatialMode(xrContext->Session, arConfig, AR_GEOSPATIAL_MODE_ENABLED);
                 // Configure the ArSession
                 ArStatus statusConfig { ArSession_configure(xrContext->Session, arConfig) };
 
@@ -376,6 +399,13 @@ namespace xr
 
             // Set the texture ID that should be used for the camera frame
             ArSession_setCameraTextureName(xrContext->Session, static_cast<uint32_t>(cameraTextureId));
+
+            // Set Earth object
+            ArSession_acquireEarth(xrContext->Session, &xrContext->Earth);
+
+            // Set unordered map earthAnchors
+            //std::unordered_map<std::string, std::shared_ptr<ArAnchor*>> earthAnchorsMap{};
+            //*xrContext->EarthAnchors = earthAnchorsMap;
 
             // Start the ArSession
             {
@@ -805,6 +835,7 @@ namespace xr
 
                 // Configure the ArSession to include the image tracking database
                 ArConfig_setAugmentedImageDatabase(xrContext->Session, arConfig, augmentedImageDatabase);
+
                 const ArStatus status{ArSession_configure(xrContext->Session, arConfig)};
 
                 // If we failed to configure the session, error out.
@@ -1520,6 +1551,213 @@ namespace xr
     std::string System::GetNativeXrContextType()
     {
         return "ARCore";
+    }
+
+    void System::removeEarthAnchor(std::string anchor_name) {
+        std::shared_ptr<ArAnchor*> ar_anchor;
+        auto jt = m_impl->XrContext->EarthAnchors.find(anchor_name);
+        if (jt != m_impl->XrContext->EarthAnchors.end()) {
+            ar_anchor = jt->second;
+            ArAnchor_detach(m_impl->XrContext->Session, *ar_anchor);
+            ArAnchor_release(*ar_anchor);
+            m_impl->XrContext->EarthAnchors.erase(anchor_name);
+        }
+    }
+
+    void System::getEarthAnchorPose(std::string anchor_name, float *out_matrix, float *out_cam_matrix) {
+        std::shared_ptr<ArAnchor*> ar_anchor;
+        auto jt = m_impl->XrContext->EarthAnchors.find(anchor_name);
+        if (jt != m_impl->XrContext->EarthAnchors.end()) {
+            ar_anchor = jt->second;
+            ArPose *out_pose = NULL;
+            ArPose_create(m_impl->XrContext->Session, NULL, &out_pose);
+            ArAnchor_getPose(m_impl->XrContext->Session, *ar_anchor, out_pose);
+            if (out_pose == NULL) return;
+            ArCamera* out_camera = NULL;
+            ArFrame_acquireCamera(
+                    m_impl->XrContext->Session,
+                    m_impl->XrContext->Frame,
+                    &out_camera
+            );
+            if (out_camera == NULL) return;
+            ArPose *out_cam_pose = NULL;
+            ArPose_create(m_impl->XrContext->Session, NULL, &out_cam_pose);
+            ArCamera_getDisplayOrientedPose(
+                    m_impl->XrContext->Session,
+                    out_camera,
+                    out_cam_pose
+            );
+            if(out_cam_pose == NULL) return;
+            ArPose_getMatrix(m_impl->XrContext->Session, out_pose, out_matrix);
+            ArPose_getMatrix(m_impl->XrContext->Session, out_cam_pose, out_cam_matrix);
+            ArPose_destroy(out_pose);
+            ArPose_destroy(out_cam_pose);
+        }
+    }
+
+    void System::addLocalEarthAnchor(std::string anchor_name, float *in_quaternion4_translation3, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
+        //LOGD("LEA in func\n");
+        if (m_impl->XrContext->Earth == NULL) return;
+        ArPose* out_pose;
+        //LOGD("LEA after out pose\n");
+        ArPose_create(
+                m_impl->XrContext->Session,
+                in_quaternion4_translation3,
+                &out_pose
+        );
+        //LOGD("LEA after create\n");
+        //TODO: add ArPose_destroy
+        if (out_pose == NULL) return;
+        //LOGD("LEA after check out pose\n");
+        ArGeospatialPose* out_geospatial_pose = NULL;
+        ArGeospatialPose_create(m_impl->XrContext->Session, &out_geospatial_pose);
+        //LOGD("LEA after geo create\n");
+        ArTrackingState earth_tracking_state = AR_TRACKING_STATE_STOPPED;
+        ArTrackable_getTrackingState(m_impl->XrContext->Session, (ArTrackable*)m_impl->XrContext->Earth,
+                                     &earth_tracking_state);
+        //LOGD("LEA after ts test\n");
+        if (earth_tracking_state != AR_TRACKING_STATE_TRACKING) return;
+        ArStatus tracking_status = AR_ERROR_NOT_TRACKING;
+        tracking_status = ArEarth_getGeospatialPose(
+                m_impl->XrContext->Session,
+                m_impl->XrContext->Earth,
+                out_pose,
+                out_geospatial_pose
+        );
+        //LOGD("LEA after status test\n");
+        if (tracking_status != AR_SUCCESS || out_geospatial_pose == NULL) return;
+        //LOGD("LEA quat methods\n");
+        ArGeospatialPose_getEastUpSouthQuaternion(m_impl->XrContext->Session, out_geospatial_pose, out_quaternion_4);
+
+        ArGeospatialPose_getAltitude(m_impl->XrContext->Session, out_geospatial_pose, out_altitude);
+
+        ArGeospatialPose_getLatitudeLongitude(m_impl->XrContext->Session, out_geospatial_pose, out_latitude, out_longitude);
+        //LOGD("LEA before add earth anchor\n");
+        addEarthAnchor(anchor_name, out_quaternion_4, *out_latitude, *out_longitude, *out_altitude, out_placed);
+
+    }
+
+    void System::hitTestEarthAnchor(std::string anchor_name, float in_tap_x, float in_tap_y, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
+        if (m_impl->XrContext->Earth == NULL) return;
+        //LOGD("ARG in hit test anchor\n");
+        ArHitResultList* hit_result_list = NULL;
+        ArHitResultList_create(m_impl->XrContext->Session, &hit_result_list);
+        //LOGD("ARG after hit test result list, x=%.2f, y=%.2f", in_tap_x, in_tap_y);
+        ArFrame_hitTest(m_impl->XrContext->Session, m_impl->XrContext->Frame, in_tap_x, in_tap_y, hit_result_list);
+        //LOGD("ARG after ar frame hit test\n");
+        int32_t hit_result_list_size = 0;
+        ArHitResultList_getSize(m_impl->XrContext->Session, hit_result_list, &hit_result_list_size);
+        //LOGD("ARG after hit result get size\n");
+        // Returned hit-test results are sorted by increasing distance from the camera
+        // or virtual ray's origin. The first hit result is often the most relevant
+        // when responding to user input.
+        ArHitResult* ar_hit = NULL;
+        // ++i should be i++
+        //LOGD("ARG before loop iter\n");
+        for (int32_t i = 0; i < hit_result_list_size; i++) {
+            //ArHitResult* ar_hit = NULL;
+            ArHitResult_create(m_impl->XrContext->Session, &ar_hit);
+            //LOGD("ARG after hit result create\n");
+            ArHitResultList_getItem(m_impl->XrContext->Session, hit_result_list, i, ar_hit);
+            //LOGD("ARG after hit get item\n");
+            if (ar_hit == NULL) {
+                //LOGE("No item was hit.");
+                return;
+            }
+
+            ArTrackable* ar_trackable = NULL;
+            ArHitResult_acquireTrackable(m_impl->XrContext->Session, ar_hit, &ar_trackable);
+            ArTrackableType ar_trackable_type = AR_TRACKABLE_NOT_VALID;
+            ArTrackable_getType(m_impl->XrContext->Session, ar_trackable, &ar_trackable_type);
+            // Creates an anchor if a plane was hit.
+            if (ar_trackable_type == AR_TRACKABLE_PLANE) {
+                // Do something with this hit result. For example, create an anchor at
+                // this point of interest.
+                //ArAnchor* anchor = NULL;
+                ArPose* out_pose = NULL;
+                ArHitResult_getHitPose(
+                        m_impl->XrContext->Session,
+                        ar_hit,
+                        out_pose
+                );
+                if (out_pose == NULL) return;
+                ArGeospatialPose* out_geospatial_pose = NULL;
+                ArStatus tracking_status = AR_ERROR_NOT_TRACKING;
+                tracking_status = ArEarth_getGeospatialPose(
+                        m_impl->XrContext->Session,
+                        m_impl->XrContext->Earth,
+                        out_pose,
+                        out_geospatial_pose
+                );
+                if (tracking_status != AR_SUCCESS || out_geospatial_pose == NULL) return;
+                ArGeospatialPose_getEastUpSouthQuaternion(m_impl->XrContext->Session, out_geospatial_pose, out_quaternion_4);
+
+                ArGeospatialPose_getAltitude(m_impl->XrContext->Session, out_geospatial_pose, out_altitude);
+
+                ArGeospatialPose_getLatitudeLongitude(m_impl->XrContext->Session, out_geospatial_pose, out_latitude, out_longitude);
+                addEarthAnchor(anchor_name, out_quaternion_4, *out_latitude, *out_longitude, *out_altitude, out_placed);
+
+                //ArHitResult_acquireNewAnchor(m_impl->XrContext->Session, ar_hit, &anchor);
+
+                // TODO: Use this anchor in your AR experience.
+                //m_impl->XrContext->EarthAnchors->emplace(anchor_name, earth_anchor);
+                /*
+                ArAnchor_release(anchor);
+                ArHitResult_destroy(ar_hit);
+                ArTrackable_release(ar_trackable);
+                 */
+                break;
+            }
+            ArHitResult_destroy(ar_hit);
+            ArTrackable_release(ar_trackable);
+        }
+        ArHitResultList_destroy(hit_result_list);
+    }
+
+    void System::addEarthAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {
+        if (m_impl->XrContext->Earth != NULL) {
+            //LOGD("AEA in func\n");
+            ArTrackingState earth_tracking_state = AR_TRACKING_STATE_STOPPED;
+            ArTrackable_getTrackingState(m_impl->XrContext->Session, (ArTrackable*)m_impl->XrContext->Earth,
+                                         &earth_tracking_state);
+
+            //LOGD("AEA tracking state test\n");
+            if (earth_tracking_state == AR_TRACKING_STATE_TRACKING) {
+                ArAnchor* earth_anchor = NULL;
+                auto anchor_status = ArEarth_acquireNewAnchor(m_impl->XrContext->Session, m_impl->XrContext->Earth,
+                        /* Locational values */
+                                               in_latitude, in_longitude, in_altitude,
+                                               in_quaternion_4, &earth_anchor);
+                //LOGD("AEA anchor create\n");
+                if (anchor_status != AR_SUCCESS) return;
+                //LOGD("AEA anchor pre-save\n");
+                if (earth_anchor == NULL) return;
+                //LOGD("AEA anchor save e_anchor not null\n");
+                auto earth_anchor_ptr = std::make_shared<ArAnchor*>(earth_anchor);
+                m_impl->XrContext->EarthAnchors.emplace(anchor_name, std::move(earth_anchor_ptr));
+                *out_placed = true;
+            }
+        }
+    }
+
+
+    void System::getEarthQuaternionLatitudeLongitude(float *out_quaternion_4, double *out_latitude, double *out_longitude) {
+        if (m_impl->XrContext->Earth != NULL) {
+            ArTrackingState earth_tracking_state = AR_TRACKING_STATE_STOPPED;
+            ArTrackable_getTrackingState(m_impl->XrContext->Session, (ArTrackable*)m_impl->XrContext->Earth,
+                                         &earth_tracking_state);
+            if (earth_tracking_state == AR_TRACKING_STATE_TRACKING) {
+                ArGeospatialPose* camera_geospatial_pose = NULL;
+                ArGeospatialPose_create(m_impl->XrContext->Session, &camera_geospatial_pose);
+                ArEarth_getCameraGeospatialPose(m_impl->XrContext->Session, m_impl->XrContext->Earth,
+                                                camera_geospatial_pose);
+                ArGeospatialPose_getEastUpSouthQuaternion(m_impl->XrContext->Session, camera_geospatial_pose, out_quaternion_4);
+                ArGeospatialPose_getLatitudeLongitude(m_impl->XrContext->Session, camera_geospatial_pose, out_latitude, out_longitude);
+                // camera_geospatial_pose contains geodetic location, rotation, and
+                // confidences values.
+                ArGeospatialPose_destroy(camera_geospatial_pose);
+            }
+        }
     }
 
     arcana::task<std::shared_ptr<System::Session>, std::exception_ptr> System::Session::CreateAsync(System& system, void* graphicsDevice, void* commandQueue, std::function<void*()> windowProvider)

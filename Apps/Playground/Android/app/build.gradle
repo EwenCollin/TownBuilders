@@ -19,10 +19,10 @@ if (project.hasProperty("JSEngine")) {
 }
 
 def graphics_api = "OpenGL"
-def platformVersion = 21
+def platformVersion = 24
 if (project.hasProperty("GRAPHICS_API")) {
     graphics_api = project.property("GRAPHICS_API")
-    if ("${graphics_api}" == "Vulkan" ) {
+    if (graphics_api == "Vulkan" ) {
         platformVersion = 24 // minimal version to get Vulkan
     }
 }
@@ -36,12 +36,12 @@ def arcore_libpath = "${buildDir}/arcore-native"
 configurations { natives }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 32
 
     defaultConfig {
         applicationId "com.android.babylonnative.playground"
-        minSdkVersion "${platformVersion}"
-        targetSdkVersion 28
+        minSdk platformVersion
+        targetSdkVersion 32
         ndkVersion "21.4.7075529"
         if (project.hasProperty("NDK_VERSION")) {
             def NDKVersion = project.property("NDK_VERSION")
@@ -90,15 +90,25 @@ android {
         pickFirst 'lib/*/libv8android.so'
         pickFirst 'lib/*/libjsc.so'
     }
+    buildFeatures.prefab = true
 }
 
 dependencies {
-    // ARCore library
-    implementation 'com.google.ar:core:1.14.0'
-    natives 'com.google.ar:core:1.14.0'
 
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.android.ndk.thirdparty:openssl:1.1.1q-beta-1'
+
+    // ARCore library
+    implementation 'com.google.ar:core:1.35.0'
+    natives 'com.google.ar:core:1.35.0'
+
+    //implementation 'com.android.support:appcompat-v7:27.1.1'
+    //implementation 'com.android.support:design:27.1.1'
+    // Apps must declare play-services-location version >= 16.
+    // In the following line, substitute `16 (or later)` with the latest version.
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    // Apps must declare play-services-auth version >= 16.
+    // In the following line, substitute `16 (or later)` with the latest version.
+    implementation 'com.google.android.gms:play-services-auth:20.4.0'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.
@@ -206,7 +216,7 @@ task extractJSEngineLibraries() {
                 include "jni/**/*"
                 // remove 'jni/'
                 eachFile { fcd ->
-                    fcd.relativePath = new RelativePath(true, fcd.relativePath.segments.drop(1))  
+                    fcd.relativePath = new RelativePath(true, fcd.relativePath.segments.drop(1))
                 }
                 includeEmptyDirs = false
             }

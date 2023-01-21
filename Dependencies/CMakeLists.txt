@@ -1,3 +1,16 @@
+
+#SET(USE_GNUTLS ON CACHE BOOL "Build libdatachannel use gnutls")
+#set(USE_GNUTLS ON)
+#add_subdirectory(gnutls)
+
+#set(Nettle_LIBRARY C:/gnutls/3.7.8/lib/nettle)
+#set(Nettle_INCLUDE_DIR C:/gnutls/3.7.8/lib/nettle)
+#set(GNUTLS_LIBRARY C:/gnutls/3.7.8/lib)
+#set(GNUTLS_INCLUDE_DIR C:/gnutls/3.7.8/lib/includes/gnutls)
+#set(Nettle_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/gnutls/lib/nettle)
+#set(Nettle_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gnutls/lib/nettle)
+#set(GNUTLS_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/gnutls/lib/)
+#set(GNUTLS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gnutls/lib/includes)
 # -------------------------------- CMakeExtensions --------------------------------
 add_subdirectory(CMakeExtensions)
 
@@ -173,3 +186,14 @@ if(NAPI_JAVASCRIPT_ENGINE STREQUAL "V8" AND ((WIN32 AND NOT (WINDOWS_STORE OR CM
     set_property(TARGET v8inspector PROPERTY UNITY_BUILD false)
     set_property(TARGET llhttp PROPERTY UNITY_BUILD false)
 endif()
+
+# --------------------------- libdatachannel ---------------------------
+SET(NO_MEDIA ON CACHE BOOL "Build libdatachannel media")
+#SET(NO_WEBSOCKET ON CACHE BOOL "Build libdatachannel websocket")
+SET(NO_EXAMPLES ON CACHE BOOL "Build libdatachannel examples")
+SET(NO_TESTS ON CACHE BOOL "Build libdatachannel tests")
+#set(ENV{OPENSSL_ROOT_DIR} C:/openssl/3.0.7)
+#set(OPENSSL_ROOT_DIR C:/openssl/3.0.7)
+add_subdirectory(libdatachannel)
+#set_property(TARGET LibDataChannel::LibDataChannel PROPERTY FOLDER Dependencies/libdatachannel)
+

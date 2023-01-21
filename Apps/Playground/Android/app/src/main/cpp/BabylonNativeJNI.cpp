@@ -19,6 +19,7 @@
 #include <Babylon/Plugins/NativeCamera.h>
 #include <Babylon/Plugins/NativeOptimizations.h>
 #include <Babylon/Plugins/ChromeDevTools.h>
+#include <Babylon/Plugins/NativeRTC.h>
 #include <Babylon/Polyfills/Console.h>
 #include <Babylon/Polyfills/Window.h>
 #include <Babylon/Polyfills/XMLHttpRequest.h>
@@ -121,6 +122,8 @@ extern "C"
 
                 Babylon::Plugins::NativeCamera::Initialize(env);
                 Babylon::Polyfills::Window::Initialize(env);
+
+                Babylon::Plugins::NativeRTC::Initialize(env);
 
                 Babylon::Polyfills::XMLHttpRequest::Initialize(env);
                 nativeCanvas = std::make_unique <Babylon::Polyfills::Canvas>(Babylon::Polyfills::Canvas::Initialize(env));
