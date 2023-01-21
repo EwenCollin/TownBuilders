@@ -31,3 +31,6 @@
 [submodule "Dependencies/llhttp"]
 	path = Dependencies/v8inspector/Dependencies/llhttp
 	url = https://github.com/nodejs/llhttp
+[submodule "TownBuildersJs"]
+	path = TownBuildersJs
+	url = git@github.com:EwenCollin/TownBuildersJs.git
