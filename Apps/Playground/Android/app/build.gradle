@@ -19,11 +19,11 @@ if (project.hasProperty("JSEngine")) {
 }
 
 def graphics_api = "OpenGL"
-def platformVersion = 24
+def platformVersion = 26
 if (project.hasProperty("GRAPHICS_API")) {
     graphics_api = project.property("GRAPHICS_API")
     if (graphics_api == "Vulkan" ) {
-        platformVersion = 24 // minimal version to get Vulkan
+        platformVersion = 26 // minimal version to get Vulkan
     }
 }
 
@@ -36,12 +36,12 @@ def arcore_libpath = "${buildDir}/arcore-native"
 configurations { natives }
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId "com.android.babylonnative.playground"
         minSdk platformVersion
-        targetSdkVersion 32
+        targetSdkVersion 33
         ndkVersion "21.4.7075529"
         if (project.hasProperty("NDK_VERSION")) {
             def NDKVersion = project.property("NDK_VERSION")
@@ -96,6 +96,9 @@ android {
 dependencies {
 
     implementation 'com.android.ndk.thirdparty:openssl:1.1.1q-beta-1'
+
+    //Activity
+    implementation "androidx.activity:activity:1.6.1"
 
     // ARCore library
     implementation 'com.google.ar:core:1.35.0'

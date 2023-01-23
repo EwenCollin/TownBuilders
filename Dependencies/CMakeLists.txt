@@ -14,6 +14,12 @@
 # -------------------------------- CMakeExtensions --------------------------------
 add_subdirectory(CMakeExtensions)
 
+# -------------------------------- GLM -----------------------------------
+add_subdirectory(glm/glm)
+target_include_directories(glm INTERFACE "glm/glm")
+#add_library(glm INTERFACE)
+#set_property(TARGET glm PROPERTY FOLDER Dependencies)
+#set_target_properties(glm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/glm)
 # -------------------------------- arcana --------------------------------
 # Dependencies: GSL
 add_subdirectory(arcana.cpp)

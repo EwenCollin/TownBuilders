@@ -54,6 +54,7 @@ target_include_directories(BabylonNativeJNI
 #add_library(openssl SHARED IMPORTED GLOBAL)
 
 target_link_libraries(BabylonNativeJNI
+        glm
         GLESv3
         android
         EGL
