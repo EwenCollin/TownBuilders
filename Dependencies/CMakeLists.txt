@@ -203,3 +203,8 @@ SET(NO_TESTS ON CACHE BOOL "Build libdatachannel tests")
 add_subdirectory(libdatachannel)
 #set_property(TARGET LibDataChannel::LibDataChannel PROPERTY FOLDER Dependencies/libdatachannel)
 
+# --------------------------- WindowsAppSDK ---------------------------
+# Dependencies: none
+if(WINDOWS_STORE)
+    add_subdirectory(WindowsAppSDK)
+endif()
