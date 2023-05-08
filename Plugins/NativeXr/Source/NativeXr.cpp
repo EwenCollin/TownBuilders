@@ -417,6 +417,12 @@ namespace Babylon
             {
                 return m_system.GetNativeXrContextType();
             }
+            void addTerrainAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {
+                m_system.addTerrainAnchor(anchor_name, in_quaternion_4, in_latitude, in_longitude, in_altitude, out_placed);
+            }
+            void getTerrainAnchorPose(std::string anchor_name, float *out_matrix, bool *out_tracked) {
+                m_system.getTerrainAnchorPose(anchor_name, out_matrix, out_tracked);
+            }
             void addLocalEarthAnchor(std::string anchor_name, float *in_quaternion4_translation3, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
                 m_system.addLocalEarthAnchor(anchor_name, in_quaternion4_translation3, out_placed, out_quaternion_4, out_altitude, out_latitude, out_longitude);
             }
@@ -3411,6 +3417,8 @@ namespace Babylon
                                 InstanceMethod("GEO_hitTestEarthAnchor", &XR::GEO_hitTestEarthAnchor),
                                 InstanceMethod("GEO_addEarthAnchor", &XR::GEO_addEarthAnchor),
                                 InstanceMethod("GEO_addLocalEarthAnchor", &XR::GEO_addLocalEarthAnchor),
+                                InstanceMethod("GEO_addTerrainAnchor", &XR::GEO_addTerrainAnchor),
+                                InstanceMethod("GEO_getTerrainAnchorPose", &XR::GEO_getTerrainAnchorPose),
                                 InstanceValue(JS_NATIVE_NAME, Napi::Value::From(env, true)),
                         });
                 /*
@@ -3572,6 +3580,19 @@ namespace Babylon
                 return earthPose;
             }
 
+            Napi::Value GEO_getTerrainAnchorPose(const Napi::CallbackInfo &info) {
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                float out_matrix[16];
+                bool out_tracked = false;
+                m_xr->getTerrainAnchorPose(anchor_name, out_matrix, &out_tracked);
+                Napi::Object earthPose = Napi::Object::New(info.Env());
+                for (int i = 0; i < 16; i++) {
+                    earthPose.Set("m" + std::to_string(i), out_matrix[i]);
+                }
+                earthPose.Set("tracked", out_tracked);
+                return earthPose;
+            }
+
             Napi::Value GEO_addLocalEarthAnchor(const Napi::CallbackInfo &info) {
                 LOGD("In geo local func\n");
                 auto anchor_name = info[0].As<Napi::String>().Utf8Value();
@@ -3629,17 +3650,48 @@ namespace Babylon
             }
 
             Napi::Value GEO_addEarthAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In method\n");
                 auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                LOGD("Param anchor ok\n");
                 auto qx = info[1].As<Napi::Number>().FloatValue();
                 auto qy = info[2].As<Napi::Number>().FloatValue();
                 auto qz = info[3].As<Napi::Number>().FloatValue();
                 auto qw = info[4].As<Napi::Number>().FloatValue();
+                LOGD("Param quat ok\n");
                 auto latitude = info[5].As<Napi::Number>().DoubleValue();
+                LOGD("Param lat ok\n");
                 auto longitude = info[6].As<Napi::Number>().DoubleValue();
+                LOGD("Param lon ok\n");
                 auto altitude = info[7].As<Napi::Number>().DoubleValue();
                 bool out_placed = false;
                 float in_quaternion_4[4] = {qx, qy, qz, qw};
+                LOGD("In method param ok!\n");
                 m_xr->addEarthAnchor(anchor_name, in_quaternion_4, latitude, longitude, altitude, &out_placed);
+                LOGD("geo ok!\n");
+                Napi::Object addAnchorResult = Napi::Object::New(info.Env());
+                addAnchorResult.Set("success", out_placed);
+                return addAnchorResult;
+            }
+
+            Napi::Value GEO_addTerrainAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In method\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                LOGD("Param anchor ok\n");
+                auto qx = info[1].As<Napi::Number>().FloatValue();
+                auto qy = info[2].As<Napi::Number>().FloatValue();
+                auto qz = info[3].As<Napi::Number>().FloatValue();
+                auto qw = info[4].As<Napi::Number>().FloatValue();
+                LOGD("Param quat ok\n");
+                auto latitude = info[5].As<Napi::Number>().DoubleValue();
+                LOGD("Param lat ok\n");
+                auto longitude = info[6].As<Napi::Number>().DoubleValue();
+                LOGD("Param lon ok\n");
+                auto altitude = info[7].As<Napi::Number>().DoubleValue();
+                bool out_placed = false;
+                float in_quaternion_4[4] = {qx, qy, qz, qw};
+                LOGD("In method param ok!\n");
+                m_xr->addTerrainAnchor(anchor_name, in_quaternion_4, latitude, longitude, altitude, &out_placed);
+                LOGD("geo ok!\n");
                 Napi::Object addAnchorResult = Napi::Object::New(info.Env());
                 addAnchorResult.Set("success", out_placed);
                 return addAnchorResult;

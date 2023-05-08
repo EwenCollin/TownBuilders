@@ -407,6 +407,8 @@ namespace xr
         void hitTestEarthAnchor(std::string anchor_name, float in_tap_x, float in_tap_y, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude);
         void addEarthAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed);
         void getEarthQuaternionLatitudeLongitude(float *out_quaternion_4, double *out_latitude, double *out_longitude);
+        void addTerrainAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed);
+        void getTerrainAnchorPose(std::string anchor_name, float *out_matrix, bool *out_tracked);
 
     private:
         struct Impl;

@@ -21,6 +21,8 @@
 #include <stb/stb_image_resize.h>
 #include <bx/math.h>
 
+#include <cmath>
+
 namespace Babylon
 {
     namespace
@@ -303,7 +305,7 @@ namespace Babylon
             JS_CLASS_NAME,
             {
                 // This must match the version in nativeEngine.ts
-                StaticValue("PROTOCOL_VERSION", Napi::Number::From(env, 7)),
+                StaticValue("PROTOCOL_VERSION", Napi::Number::From(env, 8)),
 
                 StaticValue("CAPS_LIMITS_MAX_TEXTURE_SIZE", Napi::Number::From(env, limits.maxTextureSize)),
                 StaticValue("CAPS_LIMITS_MAX_TEXTURE_LAYERS", Napi::Number::From(env, limits.maxTextureLayers)),
@@ -1616,12 +1618,12 @@ namespace Babylon
 
     Napi::Value NativeEngine::GetRenderWidth(const Napi::CallbackInfo& info)
     {
-        return Napi::Value::From(info.Env(), m_graphicsContext.GetWidth());
+        return Napi::Value::From(info.Env(), std::floor(m_graphicsContext.GetWidth() / m_graphicsContext.GetHardwareScalingLevel()));
     }
 
     Napi::Value NativeEngine::GetRenderHeight(const Napi::CallbackInfo& info)
     {
-        return Napi::Value::From(info.Env(), m_graphicsContext.GetHeight());
+        return Napi::Value::From(info.Env(), std::floor(m_graphicsContext.GetHeight() / m_graphicsContext.GetHardwareScalingLevel()));
     }
 
     void NativeEngine::SetViewPort(const Napi::CallbackInfo& info)

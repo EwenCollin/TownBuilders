@@ -30,6 +30,11 @@ public class LoginFragment extends Fragment {
     private LoginViewModel loginViewModel;
     private FragmentLoginBinding binding;
 
+    /*
+    public LoginFragment() {
+        super(R.layout.fragment_login);
+    }*/
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,

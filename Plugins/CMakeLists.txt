@@ -39,3 +39,5 @@ if(BABYLON_NATIVE_PLUGIN_NATIVEXR AND (WIN32 OR ANDROID OR IOS))
 endif()
 
 add_subdirectory(NativeRTC)
+
+add_subdirectory(NativeUI)

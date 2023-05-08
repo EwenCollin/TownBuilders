@@ -361,6 +361,7 @@ namespace xr
 
                 // Set Focus Mode Auto
                 ArConfig_setFocusMode(xrContext->Session, arConfig, AR_FOCUS_MODE_AUTO);
+                ArConfig_setPlaneFindingMode(xrContext->Session, arConfig, AR_PLANE_FINDING_MODE_HORIZONTAL);
                 ArConfig_setGeospatialMode(xrContext->Session, arConfig, AR_GEOSPATIAL_MODE_ENABLED);
                 // Configure the ArSession
                 ArStatus statusConfig { ArSession_configure(xrContext->Session, arConfig) };
@@ -1712,6 +1713,53 @@ namespace xr
             ArTrackable_release(ar_trackable);
         }
         ArHitResultList_destroy(hit_result_list);
+    }
+
+    void System::getTerrainAnchorPose(std::string anchor_name, float *out_matrix, bool *out_tracked) {
+        std::shared_ptr<ArAnchor*> ar_anchor;
+        auto jt = m_impl->XrContext->EarthAnchors.find(anchor_name);
+        if (jt != m_impl->XrContext->EarthAnchors.end()) {
+            ar_anchor = jt->second;
+
+            ArTerrainAnchorState terrain_anchor_state;
+            ArAnchor_getTerrainAnchorState(m_impl->XrContext->Session, *ar_anchor,
+                                           &terrain_anchor_state);
+            if (terrain_anchor_state != AR_TERRAIN_ANCHOR_STATE_SUCCESS) return;
+            ArTrackingState tracking_state;
+            ArAnchor_getTrackingState(m_impl->XrContext->Session, *ar_anchor, &tracking_state);
+            if (tracking_state == AR_TRACKING_STATE_TRACKING) {
+                ArPose *out_pose = NULL;
+                ArPose_create(m_impl->XrContext->Session, NULL, &out_pose);
+                ArAnchor_getPose(m_impl->XrContext->Session, *ar_anchor, out_pose);
+                ArPose_getMatrix(m_impl->XrContext->Session, out_pose, out_matrix);
+                *out_tracked = true;
+            }
+        }
+    }
+
+    void System::addTerrainAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {
+        if (m_impl->XrContext->Earth != NULL) {
+            ArTrackingState earth_tracking_state = AR_TRACKING_STATE_STOPPED;
+            ArTrackable_getTrackingState(m_impl->XrContext->Session, (ArTrackable*)m_impl->XrContext->Earth,
+                                         &earth_tracking_state);
+            if (earth_tracking_state == AR_TRACKING_STATE_TRACKING) {
+                ArAnchor* earth_anchor = NULL;
+                auto anchor_status = ArEarth_resolveAndAcquireNewAnchorOnTerrain(
+                        m_impl->XrContext->Session, m_impl->XrContext->Earth,
+                        /* Locational values */
+                        in_latitude, in_longitude, in_altitude, in_quaternion_4,
+                        &earth_anchor);
+                // This anchor can't be used immediately; check its ArTrackingState
+                // and ArTerrainAnchorState before rendering content on this anchor.
+                if (anchor_status != AR_SUCCESS) return;
+                //LOGD("AEA anchor pre-save\n");
+                if (earth_anchor == NULL) return;
+                //LOGD("AEA anchor save e_anchor not null\n");
+                auto earth_anchor_ptr = std::make_shared<ArAnchor*>(earth_anchor);
+                m_impl->XrContext->EarthAnchors.emplace(anchor_name, std::move(earth_anchor_ptr));
+                *out_placed = true;
+            }
+        }
     }
 
     void System::addEarthAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {

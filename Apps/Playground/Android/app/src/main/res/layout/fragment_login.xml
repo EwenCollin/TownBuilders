@@ -5,10 +5,10 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="@dimen/fragment_horizontal_margin"
-    android:paddingTop="@dimen/fragment_vertical_margin"
-    android:paddingRight="@dimen/fragment_horizontal_margin"
-    android:paddingBottom="@dimen/fragment_vertical_margin"
+    android:paddingLeft="@string/fragment_horizontal_margin"
+    android:paddingTop="@string/fragment_vertical_margin"
+    android:paddingRight="@string/fragment_horizontal_margin"
+    android:paddingBottom="@string/fragment_vertical_margin"
     tools:context=".ui.login.LoginFragment">
 
     <EditText
@@ -21,6 +21,7 @@
         android:autofillHints="@string/prompt_email"
         android:hint="@string/prompt_email"
         android:inputType="textEmailAddress"
+        android:minHeight="48dp"
         android:selectAllOnFocus="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,6 +39,7 @@
         android:imeActionLabel="@string/action_sign_in_short"
         android:imeOptions="actionDone"
         android:inputType="textPassword"
+        android:minHeight="48dp"
         android:selectAllOnFocus="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

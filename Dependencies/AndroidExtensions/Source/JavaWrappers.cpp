@@ -329,7 +329,7 @@ namespace java::net
 
     lang::Class HttpURLConnection::Class()
     {
-        return {"java/net/HttpURLConnection"};
+        return {"javax/net/ssl/HttpsURLConnection"};
     }
 
     int HttpURLConnection::GetResponseCode() const
