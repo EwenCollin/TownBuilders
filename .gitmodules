@@ -34,9 +34,6 @@
 [submodule "TownBuildersJs"]
 	path = TownBuildersJs
 	url = git@github.com:EwenCollin/TownBuildersJs.git
-[submodule "Dependencies/libdatachannel"]
-	path = Dependencies/libdatachannel
-	url = https://github.com/EwenCollin/libdatachannel.git
 [submodule "Dependencies/glm"]
 	path = Dependencies/glm
 	url = https://github.com/g-truc/glm.git

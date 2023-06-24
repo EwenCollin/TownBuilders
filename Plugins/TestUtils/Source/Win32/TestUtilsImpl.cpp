@@ -1,4 +1,4 @@
-#include "TestUtilsImplData.h"
+#include "../TestUtilsImplData.h"
 #include <filesystem>
 #include <Windowsx.h>
 
@@ -32,7 +32,7 @@ namespace Babylon::Plugins::Internal
         const int32_t height = info[1].As<Napi::Number>().Int32Value();
 
         auto hwnd = m_implData->m_window;
-        RECT rc{ 0, 0, width, height };
+        RECT rc{0, 0, width, height};
         AdjustWindowRectEx(&rc, GetWindowStyle(hwnd), GetMenu(hwnd) != NULL, GetWindowExStyle(hwnd));
         SetWindowPos(hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER);
     }
@@ -52,7 +52,7 @@ namespace Babylon::Plugins::Internal
 
 namespace Babylon::Plugins::TestUtils
 {
-    void Initialize(Napi::Env env, Graphics::WindowType window)
+    void Initialize(Napi::Env env, Graphics::WindowT window)
     {
         auto implData{std::make_shared<Internal::TestUtils::ImplData>(window)};
         Internal::TestUtils::CreateInstance(env, implData);

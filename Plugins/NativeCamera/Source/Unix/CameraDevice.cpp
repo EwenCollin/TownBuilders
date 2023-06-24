@@ -1,4 +1,3 @@
-#include "NativeCamera.h"
 #include "../CameraDevice.h"
 #include <napi/napi.h>
 #include <arcana/threading/affinity.h>
@@ -28,7 +27,7 @@ namespace Babylon::Plugins
         throw std::runtime_error{"HW Camera not implemented for this platform."};
     }
 
-    void CameraDevice::UpdateCameraTexture(bgfx::TextureHandle /*textureHandle*/)
+    CameraDevice::CameraDimensions CameraDevice::UpdateCameraTexture(bgfx::TextureHandle /*textureHandle*/)
     {
         throw std::runtime_error{"HW Camera not implemented for this platform."};
     }
