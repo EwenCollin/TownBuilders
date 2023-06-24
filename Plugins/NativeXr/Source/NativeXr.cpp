@@ -417,6 +417,30 @@ namespace Babylon
             {
                 return m_system.GetNativeXrContextType();
             }
+            void getEarthAnchorGeospatialPose(std::string anchor_name, float *out_eus_quaternion4, double *out_latitude, double *out_longitude, double *out_altitude, bool *out_success) {
+                m_system.getEarthAnchorGeospatialPose(anchor_name, out_eus_quaternion4, out_latitude, out_longitude, out_altitude, out_success);
+            }
+            void getCloudAnchorHostStatus(std::string anchor_name, std::string *out_cloud_anchor_id, bool *out_hosted, bool *out_error) {
+                m_system.getCloudAnchorHostStatus(anchor_name, out_cloud_anchor_id, out_hosted, out_error);
+            }
+            void resolveCloudAnchor(std::string anchor_name, std::string cloud_anchor_id, bool *out_error) {
+                m_system.resolveCloudAnchor(anchor_name, cloud_anchor_id, out_error);
+            }
+            void hostCloudAnchor(std::string anchor_name, int in_ttl_days, bool *out_error) {
+                m_system.hostCloudAnchor(anchor_name, in_ttl_days, out_error);
+            }
+            void estimateFeatureMapQualityForHosting(std::string anchor_name, bool *is_good) {
+                m_system.estimateFeatureMapQualityForHosting(anchor_name, is_good);
+            }
+            void hitTestAnchor(std::string anchor_name, float in_tap_x, float in_tap_y, bool *out_placed) {
+                m_system.hitTestAnchor(anchor_name, in_tap_x, in_tap_y, out_placed);
+            }
+            void addTerrainAnchor(std::string anchor_name, float *in_quaternion_4, double in_latitude, double in_longitude, double in_altitude, bool *out_placed) {
+                m_system.addTerrainAnchor(anchor_name, in_quaternion_4, in_latitude, in_longitude, in_altitude, out_placed);
+            }
+            void getTerrainAnchorPose(std::string anchor_name, float *out_matrix, bool *out_tracked) {
+                m_system.getTerrainAnchorPose(anchor_name, out_matrix, out_tracked);
+            }
             void addLocalEarthAnchor(std::string anchor_name, float *in_quaternion4_translation3, bool *out_placed, float *out_quaternion_4, double *out_altitude, double *out_latitude, double *out_longitude) {
                 m_system.addLocalEarthAnchor(anchor_name, in_quaternion4_translation3, out_placed, out_quaternion_4, out_altitude, out_latitude, out_longitude);
             }
@@ -3411,6 +3435,14 @@ namespace Babylon
                                 InstanceMethod("GEO_hitTestEarthAnchor", &XR::GEO_hitTestEarthAnchor),
                                 InstanceMethod("GEO_addEarthAnchor", &XR::GEO_addEarthAnchor),
                                 InstanceMethod("GEO_addLocalEarthAnchor", &XR::GEO_addLocalEarthAnchor),
+                                InstanceMethod("GEO_addTerrainAnchor", &XR::GEO_addTerrainAnchor),
+                                InstanceMethod("GEO_getTerrainAnchorPose", &XR::GEO_getTerrainAnchorPose),
+                                InstanceMethod("GEO_hitTestAnchor", &XR::GEO_hitTestAnchor),
+                                InstanceMethod("GEO_estimateFeatureMapQualityForHosting", &XR::GEO_estimateFeatureMapQualityForHosting),
+                                InstanceMethod("GEO_hostCloudAnchor", &XR::GEO_hostCloudAnchor),
+                                InstanceMethod("GEO_resolveCloudAnchor", &XR::GEO_resolveCloudAnchor),
+                                InstanceMethod("GEO_getCloudAnchorHostStatus", &XR::GEO_getCloudAnchorHostStatus),
+                                InstanceMethod("GEO_getEarthAnchorGeospatialPose", &XR::GEO_getEarthAnchorGeospatialPose),
                                 InstanceValue(JS_NATIVE_NAME, Napi::Value::From(env, true)),
                         });
                 /*
@@ -3572,6 +3604,19 @@ namespace Babylon
                 return earthPose;
             }
 
+            Napi::Value GEO_getTerrainAnchorPose(const Napi::CallbackInfo &info) {
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                float out_matrix[16];
+                bool out_tracked = false;
+                m_xr->getTerrainAnchorPose(anchor_name, out_matrix, &out_tracked);
+                Napi::Object earthPose = Napi::Object::New(info.Env());
+                for (int i = 0; i < 16; i++) {
+                    earthPose.Set("m" + std::to_string(i), out_matrix[i]);
+                }
+                earthPose.Set("tracked", out_tracked);
+                return earthPose;
+            }
+
             Napi::Value GEO_addLocalEarthAnchor(const Napi::CallbackInfo &info) {
                 LOGD("In geo local func\n");
                 auto anchor_name = info[0].As<Napi::String>().Utf8Value();
@@ -3629,17 +3674,48 @@ namespace Babylon
             }
 
             Napi::Value GEO_addEarthAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In method\n");
                 auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                LOGD("Param anchor ok\n");
                 auto qx = info[1].As<Napi::Number>().FloatValue();
                 auto qy = info[2].As<Napi::Number>().FloatValue();
                 auto qz = info[3].As<Napi::Number>().FloatValue();
                 auto qw = info[4].As<Napi::Number>().FloatValue();
+                LOGD("Param quat ok\n");
                 auto latitude = info[5].As<Napi::Number>().DoubleValue();
+                LOGD("Param lat ok\n");
                 auto longitude = info[6].As<Napi::Number>().DoubleValue();
+                LOGD("Param lon ok\n");
                 auto altitude = info[7].As<Napi::Number>().DoubleValue();
                 bool out_placed = false;
                 float in_quaternion_4[4] = {qx, qy, qz, qw};
+                LOGD("In method param ok!\n");
                 m_xr->addEarthAnchor(anchor_name, in_quaternion_4, latitude, longitude, altitude, &out_placed);
+                LOGD("geo ok!\n");
+                Napi::Object addAnchorResult = Napi::Object::New(info.Env());
+                addAnchorResult.Set("success", out_placed);
+                return addAnchorResult;
+            }
+
+            Napi::Value GEO_addTerrainAnchor(const Napi::CallbackInfo &info) {
+                LOGD("In method\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                LOGD("Param anchor ok\n");
+                auto qx = info[1].As<Napi::Number>().FloatValue();
+                auto qy = info[2].As<Napi::Number>().FloatValue();
+                auto qz = info[3].As<Napi::Number>().FloatValue();
+                auto qw = info[4].As<Napi::Number>().FloatValue();
+                LOGD("Param quat ok\n");
+                auto latitude = info[5].As<Napi::Number>().DoubleValue();
+                LOGD("Param lat ok\n");
+                auto longitude = info[6].As<Napi::Number>().DoubleValue();
+                LOGD("Param lon ok\n");
+                auto altitude = info[7].As<Napi::Number>().DoubleValue();
+                bool out_placed = false;
+                float in_quaternion_4[4] = {qx, qy, qz, qw};
+                LOGD("In method param ok!\n");
+                m_xr->addTerrainAnchor(anchor_name, in_quaternion_4, latitude, longitude, altitude, &out_placed);
+                LOGD("geo ok!\n");
                 Napi::Object addAnchorResult = Napi::Object::New(info.Env());
                 addAnchorResult.Set("success", out_placed);
                 return addAnchorResult;
@@ -3660,6 +3736,86 @@ namespace Babylon
                 earthQuatLatLon.Set("lon", Napi::Number::New(info.Env(), out_longitude));
                 return earthQuatLatLon;
             }
+
+            Napi::Value GEO_hitTestAnchor(const Napi::CallbackInfo& info) {
+                LOGD("Geo hitTestAnchor\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto tap_x = info[1].As<Napi::Number>().FloatValue();
+                auto tap_y = info[2].As<Napi::Number>().FloatValue();
+                bool out_placed = false;
+                m_xr->hitTestAnchor(anchor_name, tap_x, tap_y, &out_placed);
+                Napi::Object hitTestAnchorResult = Napi::Object::New(info.Env());
+                hitTestAnchorResult.Set("success", out_placed);
+                return hitTestAnchorResult;
+            }
+
+            Napi::Value GEO_estimateFeatureMapQualityForHosting(const Napi::CallbackInfo& info) {
+                LOGD("Geo featureMapQualityForHosting\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                bool is_good = false;
+                m_xr->estimateFeatureMapQualityForHosting(anchor_name, &is_good);
+                Napi::Object featureMapEstimation = Napi::Object::New(info.Env());
+                featureMapEstimation.Set("is_good", is_good);
+                return featureMapEstimation;
+            }
+
+            Napi::Value GEO_hostCloudAnchor(const Napi::CallbackInfo& info) {
+                LOGD("Geo hostCloudAnchor\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto in_ttl_days = info[1].As<Napi::Number>().Int32Value();
+                bool out_error = true;
+                m_xr->hostCloudAnchor(anchor_name, in_ttl_days, &out_error);
+                Napi::Object hostCloudAnchorResult = Napi::Object::New(info.Env());
+                hostCloudAnchorResult.Set("error", out_error);
+                return hostCloudAnchorResult;
+            }
+
+            Napi::Value GEO_getCloudAnchorHostStatus(const Napi::CallbackInfo& info) {
+                LOGD("Geo hostCloudAnchorStatus\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                bool out_error = true;
+                bool out_hosted = false;
+                std::string out_cloud_anchor_id = "";
+                m_xr->getCloudAnchorHostStatus(anchor_name, &out_cloud_anchor_id, &out_hosted, &out_error);
+                Napi::Object hostCloudAnchorStatus = Napi::Object::New(info.Env());
+                hostCloudAnchorStatus.Set("error", out_error);
+                hostCloudAnchorStatus.Set("hosted", out_hosted);
+                hostCloudAnchorStatus.Set("cloud_anchor_id", out_cloud_anchor_id);
+                return hostCloudAnchorStatus;
+            }
+
+
+            Napi::Value GEO_resolveCloudAnchor(const Napi::CallbackInfo& info) {
+                LOGD("Geo resolveCloudAnchor\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                auto cloud_anchor_id = info[1].As<Napi::String>().Utf8Value();
+                bool out_error = true;
+                m_xr->resolveCloudAnchor(anchor_name, cloud_anchor_id, &out_error);
+                Napi::Object resolveCloudAnchorResult = Napi::Object::New(info.Env());
+                resolveCloudAnchorResult.Set("error", out_error);
+                return resolveCloudAnchorResult;
+            }
+            Napi::Value GEO_getEarthAnchorGeospatialPose(const Napi::CallbackInfo& info) {
+                LOGD("Geo resolveCloudAnchor\n");
+                auto anchor_name = info[0].As<Napi::String>().Utf8Value();
+                bool out_success = false;
+                float out_quaternion_4[4] = {};
+                double out_latitude = 0.0;
+                double out_longitude = 0.0;
+                double out_altitude = 0.0;
+                m_xr->getEarthAnchorGeospatialPose(anchor_name, out_quaternion_4, &out_latitude, &out_longitude, &out_altitude, &out_success);
+                Napi::Object resolveCloudAnchorResult = Napi::Object::New(info.Env());
+                resolveCloudAnchorResult.Set("qx", out_quaternion_4[0]);
+                resolveCloudAnchorResult.Set("qy", out_quaternion_4[1]);
+                resolveCloudAnchorResult.Set("qz", out_quaternion_4[2]);
+                resolveCloudAnchorResult.Set("qw", out_quaternion_4[3]);
+                resolveCloudAnchorResult.Set("lat", out_latitude);
+                resolveCloudAnchorResult.Set("lon", out_longitude);
+                resolveCloudAnchorResult.Set("alt", out_altitude);
+                resolveCloudAnchorResult.Set("success", out_success);
+                return resolveCloudAnchorResult;
+            }
+
         };
     }
 

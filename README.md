@@ -2,10 +2,16 @@
 
 Place blocks to build with your friends anything, anywhere using Town Builders, a geospatial and augmented reality game prototype.
 
+## Current Status
+
+Town Builders is currently under development of its core features (rendering, multiplayer, AR & Geospatial).
+
+
+First batch of gameplay features will come during summer 2023!
 
 ## About
 
-This 3 weeks old project aims to bring blocks to the real world through augmented reality and geospatial.
+This project aims to bring blocks to the real world through augmented reality and geospatial.
 
 I have lots of ideas for future versions of this game, I will be working on multiplayer, gameplay, events and more.
 
@@ -13,11 +19,9 @@ I have lots of ideas for future versions of this game, I will be working on mult
 Follow the project to get updates and do not hesitate to open issues or reach me via Discord (Sotshi#2996) if you have ideas, suggestions, anything!
 
 
-## Project status
+## ARCore Geospatial Submission
 
-This project is a submission to the [ARCore Geospatial API Challenge](https://arcoregeospatialapi.devpost.com/).
-
-Development will continue after the submission to publish the game!
+This project won an honorable mention from [ARCore Geospatial API Challenge](https://arcoregeospatialapi.devpost.com/).
 
 
 ## Dependencies & Assets used

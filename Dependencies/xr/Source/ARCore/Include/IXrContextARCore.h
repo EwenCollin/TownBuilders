@@ -9,4 +9,7 @@ typedef struct IXrContextARCore
     virtual ArFrame* XrFrame() const = 0;
     virtual ArEarth* XrEarth() const = 0;
     virtual std::unordered_map<std::string, std::shared_ptr<ArAnchor*>> XrEarthAnchors() const = 0;
+    virtual std::unordered_map<std::string, std::shared_ptr<ArResolveAnchorOnTerrainFuture*>> XrFutures() const = 0;
+    virtual std::unordered_map<std::string, std::shared_ptr<ArHostCloudAnchorFuture*>> XrCloudAnchorHostingFutures() const = 0;
+    virtual std::unordered_map<std::string, std::shared_ptr<ArResolveCloudAnchorFuture*>> XrCloudAnchorResolvingFutures() const = 0;
 } IXrContextARCore;

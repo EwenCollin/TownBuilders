@@ -61,11 +61,11 @@ android {
             }
         }
         ndk {
-            if (project.hasProperty("ARM64Only")) {
-                abiFilters "arm64-v8a"
-            } else {
-                abiFilters "arm64-v8a", "armeabi-v7a", "x86"
-            }
+            //if (project.hasProperty("ARM64Only")) {
+            //    abiFilters "arm64-v8a"
+            //} else {
+                abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
+            //}
         }
     }
 
@@ -90,6 +90,9 @@ android {
         pickFirst 'lib/*/libv8android.so'
         pickFirst 'lib/*/libjsc.so'
     }
+    buildFeatures {
+        viewBinding true
+    }
     buildFeatures.prefab = true
 }
 
@@ -101,8 +104,8 @@ dependencies {
     implementation "androidx.activity:activity:1.6.1"
 
     // ARCore library
-    implementation 'com.google.ar:core:1.35.0'
-    natives 'com.google.ar:core:1.35.0'
+    implementation 'com.google.ar:core:1.37.0'
+    natives 'com.google.ar:core:1.37.0'
 
     //implementation 'com.android.support:appcompat-v7:27.1.1'
     //implementation 'com.android.support:design:27.1.1'
@@ -111,7 +114,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-location:21.0.1'
     // Apps must declare play-services-auth version >= 16.
     // In the following line, substitute `16 (or later)` with the latest version.
-    implementation 'com.google.android.gms:play-services-auth:20.4.0'
+    implementation 'com.google.android.gms:play-services-auth:20.4.1'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.
@@ -207,6 +210,25 @@ configurations
 }
 
 dependencies {
+
+
+    implementation 'androidx.navigation:navigation-ui:2.5.3'
+    implementation 'androidx.navigation:navigation-fragment:2.5.3'
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
+            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
+            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+        }
+    }
+
+    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.5.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     jscAndroid 'org.webkit:android-jsc:+'
     v8Android 'org.chromium:v8-android:+'
 }

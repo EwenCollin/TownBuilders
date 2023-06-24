@@ -11,6 +11,7 @@
 #include <arcana/threading/dispatcher.h>
 #include <android/log.h>
 #include <Babylon/JsRuntimeScheduler.h>
+#include <stdlib.h>
 
 #define  LOG_TAG    "NativeLOG"
 
@@ -28,6 +29,12 @@ namespace
 
     public:
         static void Initialize(Napi::Env env) {
+
+
+            //setenv("SSL_CERT_DIR", "/system/etc/security/cacerts", 1);
+            //rtcInitLogger(RTC_LOG_VERBOSE, (rtcLogCallbackFunc) &RTC::rtcLogger);
+
+
             Napi::HandleScope scope{env};
 
             Napi::Function func = DefineClass(
@@ -114,6 +121,11 @@ namespace
         std::vector <Napi::FunctionReference> m_websocket_client_closed_callbacks{};
         uint32_t m_next_websocket_client_id;
 
+        static void rtcLogger(rtcLogLevel level, const char *message) {
+            (void)level;
+            LOGD("RTC LOG : %s", message);
+        }
+
         void AddCallback(const Napi::CallbackInfo &info) {
             auto listener = info[0].As<Napi::Function>();
 
@@ -179,7 +191,7 @@ namespace
         }
 
         void CallOnPeerConnectionCreated(const std::string id) {
-            LOGD("RTC PC peer connection created callback!\n");
+            //LOGD("RTC PC peer connection created callback!\n");
             for (const auto &callback : m_peer_connection_created_callbacks) {
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, id] {
                     Napi::Object jsData = m_jsData.Value();
@@ -190,12 +202,12 @@ namespace
         }
 
         void CallOnWebsocketOpen(const std::string url) {
-            LOGD("RTCWS Websocket Open Call!\n");
-            LOGD("RTCWS Websocket Open jsData ok!\n");
+            //LOGD("RTCWS Websocket Open Call!\n");
+            //LOGD("RTCWS Websocket Open jsData ok!\n");
             for (const auto &callback : m_websocket_open_callbacks) {
-                LOGD("RTCWS Websocket Open Almost there!\n");
+                //LOGD("RTCWS Websocket Open Almost there!\n");
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, url] {
-                    LOGD("RTCWS Websocket Open Almost there! cb\n");
+                    //LOGD("RTCWS Websocket Open Almost there! cb\n");
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("wsUrl", url);
                     callback.Call({jsData});
@@ -216,7 +228,7 @@ namespace
         void CallOnWebsocketMessage(const std::string url , const std::string message) {
             for (const auto &callback : m_websocket_message_callbacks) {
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, url, message] {
-                    LOGD("RTCWS Websocket on message call!\n");
+                    //LOGD("RTCWS Websocket on message call!\n");
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("wsUrl", url);
                     jsData.Set("message", message);
@@ -228,7 +240,7 @@ namespace
         void CallOnWebsocketClosed(const std::string url) {
             for (const auto &callback : m_websocket_closed_callbacks) {
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, url] {
-                    LOGD("RTCWS Websocket on closed call!\n");
+                    //LOGD("RTCWS Websocket on closed call!\n");
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("wsUrl", url);
                     callback.Call({jsData});
@@ -242,7 +254,7 @@ namespace
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("channelId", dc_index);
                     jsData.Set("message", message);
-                    LOGD("RTC on peer message call!\n");
+                    //LOGD("RTC on peer message call!\n");
                     callback.Call({jsData});
                 });
             }
@@ -253,7 +265,7 @@ namespace
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, id] {
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("id", id);
-                    LOGD("RTC on remote description set call!\n");
+                    //LOGD("RTC on remote description set call!\n");
                     callback.Call({jsData});
                 });
             }
@@ -266,29 +278,29 @@ namespace
                     jsData.Set("id", id);
                     jsData.Set("sdp", sdp_str);
                     jsData.Set("type", type);
-                    LOGD("RTC on local description call!\n");
+                    //LOGD("RTC on local description call!\n");
                     callback.Call({jsData});
                 });
             }
         }
 
         void CallOnLocalCandidate(const std::string id, const std::string candidate_str, const std::string candidate_mid) {
-            LOGD("RTC on local candidate pre-call!\n");
+            //LOGD("RTC on local candidate pre-call!\n");
             for (const auto &callback : m_local_candidate_callbacks) {
-                LOGD("RTC on local candidate alm-call!\n");
+                //LOGD("RTC on local candidate alm-call!\n");
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, &callback, id, candidate_str, candidate_mid] {
                     Napi::Object jsData = m_jsData.Value();
                     jsData.Set("id", id);
                     jsData.Set("candidate", candidate_str);
                     jsData.Set("mid", candidate_mid);
-                    LOGD("RTC on local candidate call!\n");
+                    //LOGD("RTC on local candidate call!\n");
                     callback.Call({jsData});
                 });
             }
         }
 
         void SetRemoteDescription(const Napi::CallbackInfo &info) {
-            LOGD("RTC PC remDesc\n");
+            //LOGD("RTC PC remDesc\n");
             auto id = info[0].As<Napi::String>().Utf8Value();
             auto remote_sdp = info[1].As<Napi::String>().Utf8Value();
             auto type = info[2].As<Napi::String>().Utf8Value();
@@ -297,29 +309,29 @@ namespace
             if (jt != peerConnectionMap.end()) {
                 pc = jt->second;
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, pc, remote_sdp, type, id] {
-                    LOGD("RTC PC remDesc in task\n");
+                    //LOGD("RTC PC remDesc in task\n");
                     pc->setRemoteDescription(rtc::Description(remote_sdp, type));
                     CallOnRemoteDescriptionSet(id);
-                    LOGD("RTC PC remDesc after task\n");
+                    //LOGD("RTC PC remDesc after task\n");
                 });
             }
         }
 
         void SetRemoteCandidate(const Napi::CallbackInfo &info) {
-            LOGD("RTC PC remCandidate\n");
+            //LOGD("RTC PC remCandidate\n");
             auto id = info[0].As<Napi::String>().Utf8Value();
             auto remote_candidate = info[1].As<Napi::String>().Utf8Value();
             auto remote_mid = info[2].As<Napi::String>().Utf8Value();
-            LOGD("RTC PC remCandidate params ok\n");
+            //LOGD("RTC PC remCandidate params ok\n");
             std::shared_ptr<rtc::PeerConnection> pc;
             auto jt = peerConnectionMap.find(id);
             if (jt != peerConnectionMap.end()) {
                 pc = jt->second;
-                LOGD("RTC PC remCandidate before task\n");
+                //LOGD("RTC PC remCandidate before task\n");
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [pc, remote_candidate, remote_mid] {
-                    LOGD("RTC PC remCandidate in task\n");
+                    //LOGD("RTC PC remCandidate in task\n");
                     pc->addRemoteCandidate(rtc::Candidate(remote_candidate, remote_mid));
-                    LOGD("RTC PC remCandidate after add cand\n");
+                    //LOGD("RTC PC remCandidate after add cand\n");
                 });
             }
         }
@@ -364,37 +376,37 @@ namespace
 
             pc->onLocalDescription([this, id](rtc::Description sdp) {
                 // Send the SDP to the remote peer
-                LOGD("RTC on local description re-call!\n");
+                //LOGD("RTC on local description re-call!\n");
                 CallOnLocalDescription(id, std::string(sdp), sdp.typeString());
             });
 
             pc->onLocalCandidate([this, id](rtc::Candidate candidate) {
                 // Send the candidate to the remote peer
-                LOGD("RTC on local candidate re-call!\n");
+                //LOGD("RTC on local candidate re-call!\n");
                 CallOnLocalCandidate(id, std::string(candidate), candidate.mid());
             });
             pc->onDataChannel([this, id](std::shared_ptr <rtc::DataChannel> incoming) {
-                LOGD("RTC on local channel setup!\n");
+                //LOGD("RTC on local channel setup!\n");
                 dataChannelMap.emplace(id, std::move(incoming));
                 std::shared_ptr<rtc::DataChannel> dc;
                 auto jt = dataChannelMap.find(id);
                 if (jt != dataChannelMap.end()) {
                     dc = jt->second;
                     dc->onOpen([this, id]() {
-                        LOGD("RTC local channel open!\n");
+                        //LOGD("RTC local channel open!\n");
                         CallOnDataChannel(id);
                     });
                     //onClosed
                     //incoming->send("Hello world!");
-                    LOGD("RTC set on message channel!\n");
+                    //LOGD("RTC set on message channel!\n");
                     dc->onMessage([this, id](std::variant <rtc::binary, rtc::string> message) {
                         if (std::holds_alternative<rtc::string>(message)) {
-                            LOGD("On RTC Message PeerConn call\n");
+                            //LOGD("On RTC Message PeerConn call\n");
                             CallOnMessage(id, std::get<rtc::string>(message));
                         }
                     });
                 }
-                LOGD("RTC local channel open emplace!\n");
+                //LOGD("RTC local channel open emplace!\n");
 
             });
             return pc;
@@ -408,11 +420,11 @@ namespace
 
         void StartPeerConnection(const Napi::CallbackInfo &info) {
             auto id = info[0].As<Napi::String>().Utf8Value();
-            LOGD("RTC PC start\n");
+            //LOGD("RTC PC start\n");
             auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, id] {
                 auto pc = createPeerConnection(id);
                 CallOnPeerConnectionCreated(id);
-                LOGD("RTC after peer connection created in call!\n");
+                //LOGD("RTC after peer connection created in call!\n");
             });
         }
 
@@ -423,63 +435,65 @@ namespace
             auto jt = m_websockets.find(ws_url);
             if (jt != m_websockets.end()) {
                 ws = jt->second;
-                LOGD("RTCWS before ws->send!\n");
+                //LOGD("RTCWS before ws->send!\n");
                 //auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [ws, message] {
-                    LOGD("RTCWS before ws->send in async task!\n");
+                    //LOGD("RTCWS before ws->send in async task!\n");
                     ws->send(message);
                 //});
             }
         }
 
         void CloseWebsocket(const Napi::CallbackInfo &info) {
-            LOGD("RTCWS called close websocket\n");
+            //LOGD("RTCWS called close websocket\n");
             auto ws_url = info[0].As<Napi::String>().Utf8Value();
             std::shared_ptr<rtc::WebSocket> ws;
             auto jt = m_websockets.find(ws_url);
             if (jt != m_websockets.end()) {
                 ws = jt->second;
-                LOGD("RTCWS closing ws->close async task!\n");
+                //LOGD("RTCWS closing ws->close async task!\n");
                 auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [ws] {
-                    LOGD("RTCWS closing ws->close!\n");
+                    //LOGD("RTCWS closing ws->close!\n");
                     ws->close();
                 });
             }
         }
 
         void OpenWebsocket(const Napi::CallbackInfo &info) {
-            LOGD("RTCWS before websocket\n");
+            //LOGD("RTCWS before websocket\n");
             auto url = info[0].As<Napi::String>().Utf8Value();
-            auto ws = std::make_shared<rtc::WebSocket>();
+            rtc::WebSocket::Configuration wsConfig = {};
+            wsConfig.disableTlsVerification = true;
+            auto ws = std::make_shared<rtc::WebSocket>(wsConfig);
             //arcana::background_dispatcher<32> scheduler;
             auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, url, ws] {
-                LOGD("RTCWS Opening websocket\n");
+                //LOGD("RTCWS Opening websocket\n");
                 ws->onOpen([this, url]() {
-                    LOGD("RTCWS Websocket Open!\n");
+                    //LOGD("RTCWS Websocket Open!\n");
                     //auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, url] {
 
-                        LOGD("RTCWS Websocket Open CB!\n");
+                        //LOGD("RTCWS Websocket Open CB!\n");
                         CallOnWebsocketOpen(url);
                     //});
                 });
                 ws->onMessage([this, url](std::variant<rtc::binary, rtc::string> message) {
                     if (std::holds_alternative<rtc::string>(message)) {
-                        LOGD("RTCWS Websocket Message before task!\n");
+                        //LOGD("RTCWS Websocket Message before task!\n");
                         //auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, url, message] {
-                            LOGD("RTCWS Websocket Message CB!\n");
+                            //LOGD("RTCWS Websocket Message CB!\n");
                             CallOnWebsocketMessage(url, std::get<rtc::string>(message));
                         //});
                     }
                 });
                 ws->onError([this, url](std::string s) {
-                    (void)s;
-                    //LOGD("RTCWS Websocket Error! - %s\n", s.c_str());
+                    //(void)s;
+                    LOGD("RTCWS Websocket Error! - %s\n", s.c_str());
                     //auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, url] {
-                        LOGD("RTCWS Websocket Error CB!\n");
+                        //LOGD("RTCWS Websocket Error CB!\n");
                         CallOnWebsocketClosed(url);
                     //});
                 });
                 ws->onClosed([this, url]() {
-                    LOGD("RTCWS Websocket Closed CB!\n");
+                    //LOGD("RTCWS Websocket Closed CB!\n");
                     //auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, url] {
                         CallOnWebsocketClosed(url);
                     //});
@@ -557,7 +571,7 @@ namespace
                 auto wsServer = std::make_shared<rtc::WebSocketServer>(serverConfig);
                 wsServer->onClient([this](std::shared_ptr<rtc::WebSocket> wsClient) {
                     auto clientId = m_next_websocket_client_id++;
-                    LOGD("RTCSERVER on new Client connected!\n");
+                    //LOGD("RTCSERVER on new Client connected!\n");
                     wsClient->onMessage([this, clientId, wsClient](std::variant<rtc::binary, rtc::string> message) {
                         if (std::holds_alternative<rtc::string>(message)) {
                             auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, clientId, wsClient, message] {
@@ -566,15 +580,16 @@ namespace
                         }
                     });
                     wsClient->onError([this, clientId, wsClient](std::string s) {
-                        LOGD("RTCWS Websocket Error! - %s\n", s.c_str());
+                        //LOGD("RTCWS Websocket Error! - %s\n", s.c_str());
+                        (void)s;
                         auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, clientId, wsClient] {
-                            LOGD("RTCSERVER Client Websocket Error CB!\n");
+                            //LOGD("RTCSERVER Client Websocket Error CB!\n");
                             CallOnWebsocketClientClosed(clientId, getOrNullRemoteAddressWebsocket(*wsClient));
                             m_websocket_clients.erase(clientId);
                         });
                     });
                     wsClient->onClosed([this, clientId, wsClient]() {
-                        LOGD("RTCSERVER Client Websocket Closed CB!\n");
+                        //LOGD("RTCSERVER Client Websocket Closed CB!\n");
                         auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(), [this, clientId, wsClient] {
                             CallOnWebsocketClientClosed(clientId, getOrNullRemoteAddressWebsocket(*wsClient));
                             m_websocket_clients.erase(clientId);
@@ -584,7 +599,7 @@ namespace
                     m_websocket_clients.emplace(clientId, std::move(wsClient));
                     auto task = arcana::make_task(m_runtimeScheduler, arcana::cancellation::none(),
                           [this, clientId, wsClient] {
-                              LOGD("RTCSERVER onClient CB!\n");
+                              //LOGD("RTCSERVER onClient CB!\n");
                               CallOnWebsocketClientConnected(clientId, getOrNullRemoteAddressWebsocket(*wsClient));
                           });
                 });

@@ -20,6 +20,7 @@
 #include <Babylon/Plugins/NativeOptimizations.h>
 #include <Babylon/Plugins/ChromeDevTools.h>
 #include <Babylon/Plugins/NativeRTC.h>
+#include <Babylon/Plugins/NativeUI.h>
 #include <Babylon/Polyfills/Console.h>
 #include <Babylon/Polyfills/Window.h>
 #include <Babylon/Polyfills/XMLHttpRequest.h>
@@ -65,19 +66,19 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_BabylonNative_Wrapper_surfaceCreated(JNIEnv* env, jclass clazz, jobject surface, jobject context)
+    Java_BabylonNative_Wrapper_surfaceCreated(JNIEnv* jniEnv, jclass clazz, jobject surface, jobject context)
     {
         if (!g_runtime)
         {
             JavaVM* javaVM{};
-            if (env->GetJavaVM(&javaVM) != JNI_OK)
+            if (jniEnv->GetJavaVM(&javaVM) != JNI_OK)
             {
                 throw std::runtime_error("Failed to get Java VM");
             }
 
             android::global::Initialize(javaVM, context);
 
-            ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+            ANativeWindow* window = ANativeWindow_fromSurface(jniEnv, surface);
             int32_t width  = ANativeWindow_getWidth(window);
             int32_t height = ANativeWindow_getHeight(window);
 
@@ -92,7 +93,7 @@ extern "C"
 
             g_runtime = std::make_unique<Babylon::AppRuntime>();
 
-            g_runtime->Dispatch([](Napi::Env env)
+            g_runtime->Dispatch([jniEnv](Napi::Env env)
             {
                 g_device->AddToJavaScript(env);
 
@@ -117,7 +118,9 @@ extern "C"
 
                 g_nativeXr.emplace(Babylon::Plugins::NativeXr::Initialize(env));
                 g_nativeXr->SetSessionStateChangedCallback([](bool isXrActive){ g_isXrActive = isXrActive; });
-                
+
+                Babylon::Plugins::NativeUI::Initialize(env);//, jniEnv);
+
                 g_nativeInput = &Babylon::Plugins::NativeInput::CreateForJavaScript(env);
 
                 Babylon::Plugins::NativeCamera::Initialize(env);
@@ -143,6 +146,7 @@ extern "C"
             g_scriptLoader->LoadScript("app:///Scripts/babylonjs.loaders.js");
             g_scriptLoader->LoadScript("app:///Scripts/babylonjs.materials.js");
             g_scriptLoader->LoadScript("app:///Scripts/babylon.gui.js");
+            g_scriptLoader->LoadScript("app:///Scripts/meshwriter.min.js");
         }
     }
 
@@ -167,6 +171,7 @@ extern "C"
     Java_BabylonNative_Wrapper_setCurrentActivity(JNIEnv* env, jclass clazz, jobject currentActivity)
     {
         android::global::SetCurrentActivity(currentActivity);
+        //Babylon::Plugins::NativeUI::SetActivity(currentActivity, clazz);
     }
 
     JNIEXPORT void JNICALL

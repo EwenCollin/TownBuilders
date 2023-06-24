@@ -73,6 +73,7 @@ target_link_libraries(BabylonNativeJNI
         NativeCamera
         AndroidExtensions
         ChromeDevTools
+        NativeUI
         NativeRTC
         openssl::crypto
         openssl::ssl

@@ -2,10 +2,12 @@ package com.android.babylonnative.playground;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import androidx.activity.result.ActivityResultLauncher;
 //import androidx.activity.;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 //import android.support.v4.app.ActivityCompat;
@@ -16,32 +18,35 @@ import android.widget.Toast;
 import BabylonNative.BabylonView;
 
 public class PlaygroundActivity extends Activity implements BabylonView.ViewDelegate {
-    BabylonView mView;
+    //BabylonView mView;
 
     final private int REQUEST_CODE_ASK_PERMISSIONS_GEO = 2556;
     private boolean hasGeoPermission = false;
+            //"com.android.babylonnative.playground.LaunchMain");
+
+    private void launchMainActivity() {
+        Intent launchIntent = new Intent(this, MainActivity.class);
+        launchIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        startActivity(launchIntent);
+    }
 
     // Activity life
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        mView = new BabylonView(getApplication(), this);
+
+        setContentView(R.layout.activity_playground);
+
+
+        //mView = new BabylonView(getApplication(), this);
 
         if (ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED) {
             hasGeoPermission = true;
             // You can use the API that requires the permission.
-            setContentView(mView);
-        } else {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
-                    PackageManager.PERMISSION_GRANTED ||
-                    ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
-                            PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this, new String[]{
-                                android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION},
-                        REQUEST_CODE_ASK_PERMISSIONS_GEO);
-            }
+            launchMainActivity();
+            //setContentView(mView);
         }
             /*
             // You can directly ask for the permission.
@@ -70,6 +75,32 @@ public class PlaygroundActivity extends Activity implements BabylonView.ViewDele
         //setContentView(mView);
     }
 
+
+    public void onStart(View v) {
+        ConstraintLayout permissionExplanationContainer = findViewById(R.id.permissionExplanationContainer);
+        if (!hasGeoPermission) {
+            permissionExplanationContainer.setVisibility(View.VISIBLE);
+        } else {
+            launchMainActivity();
+        }
+
+    }
+
+    public void onAllow(View v) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                        PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+                        PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{
+                            android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.CAMERA},
+                    REQUEST_CODE_ASK_PERMISSIONS_GEO);
+        }
+    }
+
+    /*
     @Override
     protected void onPause() {
         mView.onPause();
@@ -81,27 +112,39 @@ public class PlaygroundActivity extends Activity implements BabylonView.ViewDele
         super.onResume();
         mView.onResume();
     }
+    */
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_PERMISSIONS_GEO:
-                if (results[0] == PackageManager.PERMISSION_GRANTED || results[1] == PackageManager.PERMISSION_GRANTED ) {
+                if ((results[0] == PackageManager.PERMISSION_GRANTED || results[1] == PackageManager.PERMISSION_GRANTED) &&
+                    results[2] == PackageManager.PERMISSION_GRANTED ) {
                     hasGeoPermission = true;
-                    setContentView(mView);
-                } else {
+                    launchMainActivity();
+                    //setContentView(mView);
+                } else if (results[2] != PackageManager.PERMISSION_GRANTED){
                     // Permission Denied
-                    Toast.makeText( this,"Location access is required to use this application." , Toast.LENGTH_SHORT)
+                    Toast.makeText( this,"Camera is required to use this application." , Toast.LENGTH_SHORT)
+                            .show();
+                } else {
+                    Toast.makeText( this,"Location is required to use this application." , Toast.LENGTH_SHORT)
                             .show();
                 }
                 break;
             default:
                 if (hasGeoPermission) {
-                    mView.onRequestPermissionsResult(requestCode, permissions, results);
+                    //mView.onRequestPermissionsResult(requestCode, permissions, results);
                 }
         }
     }
 
+    @Override
+    public void onViewReady() {
+
+    }
+    /*
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -114,4 +157,6 @@ public class PlaygroundActivity extends Activity implements BabylonView.ViewDele
     public void onViewReady() {
         mView.loadScript("app:///Scripts/index.js");
     }
+    */
+
 }
