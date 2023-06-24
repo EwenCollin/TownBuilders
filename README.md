@@ -16,7 +16,7 @@ This project aims to bring blocks to the real world through augmented reality an
 I have lots of ideas for future versions of this game, I will be working on multiplayer, gameplay, events and more.
 
 
-Follow the project to get updates and do not hesitate to open issues or reach me via Discord (Sotshi#2996) if you have ideas, suggestions, anything!
+Follow the project to get updates and feel free to open issues or reach me via Discord (Sotshi#2996) if you have ideas, suggestions, anything!
 
 
 ## ARCore Geospatial Submission
